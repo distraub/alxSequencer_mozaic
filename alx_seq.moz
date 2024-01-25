@@ -1,0 +1,271 @@
+@Onload
+  // setup some variables to use (everything is global in mozaic)
+  ppqn = 4 // Pulses per quarter note (default to 4 16 notes)
+  layoutMode = 1 // default to layout mode 1 (knobs view)
+  currentPad = 0 // sets the current active pad (this sets it to the first pad in the sequence)
+  lowNote = 36 // sets the lowest note in the octave range
+  octRange = 3 // sets how large the octave range is (defaults to 3 octaves)
+  rootNote = 0 // sets the root note to C]
+  scale = 4
+  SetRootNote rootNote
+
+  // set some knob values
+  SetKnobValue 8, Round (TranslateScale octrange, 1, 5, 0, 127)
+  SetKnobValue 10, Round (TranslateScale rootNote, 0, 11, 0, 127)
+
+  ShowLayout layoutMode
+  SetMetroPPQN ppqn
+  PresetScale scale // set the preset scale to the scale 
+
+  Call @MyLayoutChange // initial layout setup
+
+  for i = 0 to 15
+    LatchPad i, false // init the latch state of all the pads
+  endfor
+@End
+
+@OnKnobChange
+  // check if we are a pitch knob and change our value to a note value
+  if (LastKnob >= 0 and LastKnob < 8) or (LastKnob >= 11 and LastKnob < 19)
+    noteValue = (TranslateScale (GetKnobValue LastKnob), 0, 127, lowNote, lowNote + (octRange * 12))
+    noteValue = ScaleQuantize noteValue
+    if LastKnob = knobPulse
+      LabelKnob knob, {▫️}, (NoteName noteValue, YES)
+    else
+      LabelKnob LastKnob, {▪️}, (NoteName noteValue, YES)
+    endif
+    if LastKnob < 11
+      LabelPad LastKnob, (NoteName noteValue, YES)
+    else
+      LabelPad LastKnob - 3, (NoteName noteValue, YES)
+    endif
+  endif
+
+  if LastKnob = 20 // set gate
+    gate = ( GetKnobValue LastKnob ) * 10 + 50
+    LabelKnob LastKnob, {Gate }, Round gate
+  endif
+
+  if LastKnob = 21 // ppqn
+    ppqn = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 1, 8)
+    SetMetroPPQN ppqn
+    LabelKnob LastKnob, {PPQN}, ppqn
+  endif
+
+  if LastKnob = 19 // set low note
+    lowNote = ( GetKnobValue LastKnob )
+    lowNote = ScaleQuantize lowNote
+    LabelKnob LastKnob, {Mn Nt }, NoteName lowNote, YES
+  endif
+
+  if LastKnob = 8 // set octave range
+    octRange = Round (TranslateScale (GetKnobValue LastKnob), 0, 127, 1, 5)
+    LabelKnob LastKnob, {Rng }, octRange, { Oc}
+  endif
+
+  if LastKnob = 10 // set root note
+    rootNote = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 0, 11)
+    SetRootNote rootNote
+    LabelKnob LastKnob, {Rt Nt }, RootNoteName
+  endif
+
+  if LastKnob = 9
+    scale = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 0, 24)
+    call @MyScaleLabel
+  endif
+@End
+
+@OnShiftDown // use the shift button to change layouts
+  if layoutMode = 1
+    layoutMode = 2
+  else 
+    layoutMode = 1
+  endif
+  ShowLayout layoutMode
+  Call @MyLayoutChange
+@End
+
+@MyScaleLabel
+  if scale = 0
+    LabelKnob 9, {Chromatic}
+  endif
+  if scale = 1
+    LabelKnob 9, {Major}
+  endif
+  if scale = 2
+    LabelKnob 9, {Minor}
+  endif
+  if scale = 3
+    LabelKnob 9, {MinMelod}
+  endif
+  if scale = 4
+    LabelKnob 9, {MinHarm}
+  endif
+  if scale = 5
+    LabelKnob 9, {MajPent}
+  endif
+  if scale = 6
+    LabelKnob 9, {MinPent}
+  endif
+  if scale = 7
+    LabelKnob 9, {Aeolian}
+  endif
+  if scale = 8
+    LabelKnob 9, {Dorian}
+  endif
+  if scale = 9
+    LabelKnob 9, {Lydian}
+  endif
+  if scale = 10
+    LabelKnob 9, {Mixolydian}
+  endif
+  if scale = 11
+    LabelKnob 9, {Phrygian}
+  endif
+  if scale = 12
+    LabelKnob 9, {Blues}
+  endif
+  if scale = 13
+    LabelKnob 9, {WholeTone}
+  endif
+  if scale = 14
+    LabelKnob 9, {Diminished}
+  endif
+  if scale = 15
+    LabelKnob 9, {Bhairavi}
+  endif
+  if scale = 16
+    LabelKnob 9, {Gypsy}
+  endif
+  if scale = 17
+    LabelKnob 9, {Klezmer}
+  endif
+  if scale = 18
+    LabelKnob 9, {Octave}
+  endif
+  if scale = 19
+    LabelKnob 9, {Andean}
+  endif
+  if scale = 20
+    LabelKnob 9, {Iwato}
+  endif
+  if scale = 21
+    LabelKnob 9, {InSen}
+  endif
+  if scale = 22
+    LabelKnob 9, {HiraJoshi}
+  endif
+  if scale = 23
+    LabelKnob 9, {Pelog}
+  endif
+  if scale = 24
+    LabelKnob 9, {Yo}
+  endif
+@End
+
+@MyLayoutChange // setup knob labels
+  if layoutMode = 1
+    // pitch knobs set labels to note values
+    for knob = 0 to 7 // first 8 pitch knobs
+      noteValue =  (TranslateScale (GetKnobValue knob), 0, 127, lowNote, lowNote + (octRange * 12))
+      noteValue = ScaleQuantize noteValue
+      LabelKnob knob, {▪️}, (NoteName noteValue, YES)
+      LabelPad knob, (NoteName noteValue, YES)
+    endfor
+    for knob = 11 to 18 // next 8 pitch knobs
+      noteValue =  (TranslateScale (GetKnobValue knob), 0, 127, lowNote, lowNote + (octRange * 12))
+      noteValue = ScaleQuantize noteValue
+      LabelKnob knob, {▪️}, (NoteName noteValue, YES)
+      LabelPad knob - 3, (NoteName noteValue, YES)
+    endfor
+
+    // label low note
+    lowNote = ScaleQuantize lowNote
+    LabelKnob 19, {Mn Nt }, NoteName lowNote, YES
+
+    // label gate
+    gate = ( GetKnobValue 20 ) * 10 + 50
+    LabelKnob 20, {Gate }, Round gate
+
+    // label ppqn
+    LabelKnob 21, {PPQN}, ppqn
+
+    // Label the scale knob
+    Call @MyScaleLabel
+
+    // Octave Range
+    LabelKnob 8, {Rng }, octRange, { Oc}
+
+    // blank knob
+    LabelKnob 10, {Rt Nt }, RootNoteName
+
+    // label the knobs (TODO maybe make this dynamic)
+    LabelKnobs {ALX Sequencer}
+
+  endif
+@End
+
+@OnHostStart
+  if HostBeat = 0 // when the host starts if the beat is 0 restart our sequence
+     currentPad = 0
+  endif
+@End
+
+// black circle ⚫
+// white circle ⚪
+// blue circle 🔵
+
+// small black square ▪️
+// small white square ▫️
+
+@MyPulseKnobs
+  for x = 0 to 15
+    flashKnob = x
+    if x > 7
+    flashKnob = x + 3
+    endif
+
+    if flashKnob = knobPulse
+      noteValue =  (TranslateScale (GetKnobValue flashKnob), 0, 127, lowNote, lowNote + (octRange * 12))
+      noteValue = ScaleQuantize noteValue
+      LabelKnob flashKnob, {▫️}, (NoteName noteValue, YES)
+    else
+      noteValue =  (TranslateScale (GetKnobValue flashKnob), 0, 127, lowNote, lowNote + (octRange * 12))
+      noteValue = ScaleQuantize noteValue
+      LabelKnob flashKnob, {▪️}, (NoteName noteValue, YES)
+    endif
+  endfor
+@End
+
+@OnMetroPulse 
+  pulse = CurrentMetroPulse // no longer using this for timing
+  
+ FlashPad currentPad // shows where we are in the sequence
+
+  // set the pitch knob pulse (have to account for the non-sequential pitch knobs)
+  knobPulse = currentPad
+  if knobPulse > 7
+    knobPulse = knobPulse + 3
+  endif
+
+  // pitch (applying range)
+  pitch = (TranslateScale (GetKnobValue knobPulse), 0, 127, lowNote, lowNote + (octRange * 12))
+  pitch = ScaleQuantize pitch
+  gate = ( GetKnobValue 20 ) * 10 + 50 // gate
+
+  if (PadState currentPad) // only send the note if our pad is on
+    SendMIDINoteOn 0, pitch, 100
+    SendMIDINoteOff 0, pitch, 0, gate
+    FlashUserLed
+  endif
+
+  Inc currentPad // increment our current pad
+  if (currentPad > 15) // loop if we are past the last pad
+    currentPad = 0
+  endif
+  Call @MyPulseKnobs
+@End
+
+@OnPadDown // toggle pad latch state when pressed
+  LatchPad LastPad, NOT (PadState LastPad)
+@End
