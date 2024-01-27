@@ -49,7 +49,7 @@
   if LastKnob = 21 // ppqn
     ppqn = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 1, 8)
     SetMetroPPQN ppqn
-    LabelKnob LastKnob, {PPQN}, ppqn
+    LabelKnob LastKnob, {PPQN }, ppqn
   endif
 
   if LastKnob = 19 // set low note
@@ -188,7 +188,7 @@
     LabelKnob 20, {Gate }, Round gate
 
     // label ppqn
-    LabelKnob 21, {PPQN}, ppqn
+    LabelKnob 21, {PPQN }, ppqn
 
     // Label the scale knob
     Call @MyScaleLabel
@@ -200,8 +200,30 @@
     LabelKnob 10, {Rt Nt }, RootNoteName
 
     // label the knobs (TODO maybe make this dynamic)
-    LabelKnobs {ALX Sequencer}
+    if Unassigned pitch
+      LabelKnobs {ALX Sequencer}
+      LabelPads {ALX Sequencer}
+    else
+      Call @MyHostStopLabel
+      Call @MyPulseKnobs
+    endif 
+  else
+    if Unassigned pitch
+      LabelKnobs { }
+      LabelPads {ALX Sequencer}
+    else
+      Call @MyHostStopLabel
+    endif
+  endif
+@End
 
+@MyHostStopLabel
+  if layoutMode = 1
+    LabelKnobs {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
+    LabelPads {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
+  else
+    LabelKnobs { }
+    LabelPads {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
   endif
 @End
 
@@ -209,6 +231,10 @@
   if HostBeat = 0 // when the host starts if the beat is 0 restart our sequence
      currentPad = 0
   endif
+@End
+
+@OnHostStop
+  Call @MyHostStopLabel
 @End
 
 // black circle ⚫
@@ -257,6 +283,14 @@
     SendMIDINoteOn 0, pitch, 100
     SendMIDINoteOff 0, pitch, 0, gate
     FlashUserLed
+  endif
+
+  if layoutMode = 1
+    LabelKnobs {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
+    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
+  else
+    LabelKnobs { }
+    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
   endif
 
   Inc currentPad // increment our current pad
