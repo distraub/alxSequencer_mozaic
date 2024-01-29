@@ -1,27 +1,29 @@
 @Onload
   // setup some variables to use (everything is global in mozaic)
-  ppqn = 4 // Pulses per quarter note (default to 4 16 notes)
-  layoutMode = 1 // default to layout mode 1 (knobs view)
-  currentPad = 0 // sets the current active pad (this sets it to the first pad in the sequence)
-  lowNote = 36 // sets the lowest note in the octave range
-  octRange = 3 // sets how large the octave range is (defaults to 3 octaves)
-  rootNote = 0 // sets the root note to C]
-  scale = 4
-  SetRootNote rootNote
+  if Unassigned  ppqn
+    ppqn = 4 // Pulses per quarter note (default to 4 16 notes)
+    layoutMode = 1 // default to layout mode 1 (knobs view)
+    currentPad = 0 // sets the current active pad (this sets it to the first pad in the sequence)
+    lowNote = 36 // sets the lowest note in the octave range
+    octRange = 3 // sets how large the octave range is (defaults to 3 octaves)
+    rootNote = 0 // sets the root note to C]
+    scale = 4
+    for i = 0 to 15
+      LatchPad i, false // init the latch state of all the pads
+    endfor
 
-  // set some knob values
-  SetKnobValue 8, Round (TranslateScale octrange, 1, 5, 0, 127)
-  SetKnobValue 10, Round (TranslateScale rootNote, 0, 11, 0, 127)
+    SetRootNote rootNote
 
-  ShowLayout layoutMode
-  SetMetroPPQN ppqn
-  PresetScale scale // set the preset scale to the scale 
+    // set some knob values
+    SetKnobValue 8, Round (TranslateScale octrange, 1, 5, 0, 127)
+    SetKnobValue 10, Round (TranslateScale rootNote, 0, 11, 0, 127)
 
-  Call @MyLayoutChange // initial layout setup
+    ShowLayout layoutMode
+    SetMetroPPQN ppqn
+    PresetScale scale // set the preset scale to the scale 
 
-  for i = 0 to 15
-    LatchPad i, false // init the latch state of all the pads
-  endfor
+    Call @MyLayoutChange // initial layout setup
+  endif
 @End
 
 @OnKnobChange
@@ -56,22 +58,27 @@
     lowNote = ( GetKnobValue LastKnob )
     lowNote = ScaleQuantize lowNote
     LabelKnob LastKnob, {Mn Nt }, NoteName lowNote, YES
+    Call @MySetPitchKnobLabels
   endif
 
   if LastKnob = 8 // set octave range
     octRange = Round (TranslateScale (GetKnobValue LastKnob), 0, 127, 1, 5)
     LabelKnob LastKnob, {Rng }, octRange, { Oc}
+    Call @MySetPitchKnobLabels
   endif
 
   if LastKnob = 10 // set root note
     rootNote = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 0, 11)
     SetRootNote rootNote
     LabelKnob LastKnob, {Rt Nt }, RootNoteName
+    Call @MySetPitchKnobLabels
   endif
 
   if LastKnob = 9
     scale = RoundDown (TranslateScale (GetKnobValue LastKnob), 0, 127, 0, 24)
     call @MyScaleLabel
+    PresetScale scale
+    Call @MySetPitchKnobLabels
   endif
 @End
 
@@ -163,10 +170,8 @@
   endif
 @End
 
-@MyLayoutChange // setup knob labels
-  if layoutMode = 1
-    // pitch knobs set labels to note values
-    for knob = 0 to 7 // first 8 pitch knobs
+@MySetPitchKnobLabels
+  for knob = 0 to 7 // first 8 pitch knobs
       noteValue =  (TranslateScale (GetKnobValue knob), 0, 127, lowNote, lowNote + (octRange * 12))
       noteValue = ScaleQuantize noteValue
       LabelKnob knob, {▪️}, (NoteName noteValue, YES)
@@ -178,6 +183,12 @@
       LabelKnob knob, {▪️}, (NoteName noteValue, YES)
       LabelPad knob - 3, (NoteName noteValue, YES)
     endfor
+@End
+
+@MyLayoutChange // setup knob labels
+  if layoutMode = 1
+    // pitch knobs set labels to note values
+    Call @MySetPitchKnobLabels
 
     // label low note
     lowNote = ScaleQuantize lowNote
