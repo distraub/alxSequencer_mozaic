@@ -8,6 +8,7 @@
     octRange = 3 // sets how large the octave range is (defaults to 3 octaves)
     rootNote = 0 // sets the root note to C]
     scale = 4
+    needsReset = false
     for i = 0 to 15
       LatchPad i, false // init the latch state of all the pads
     endfor
@@ -82,14 +83,30 @@
   endif
 @End
 
-@OnShiftDown // use the shift button to change layouts
-  if layoutMode = 1
-    layoutMode = 2
-  else 
-    layoutMode = 1
+@OnShiftDown
+  if needsReset = true
+    needsReset = false
   endif
-  ShowLayout layoutMode
-  Call @MyLayoutChange
+  SetTimerInterval 1000
+  StartTimer
+@End
+
+@OnShiftUp // use the shift button to change layouts
+  if needsReset = false
+    if layoutMode = 1
+      layoutMode = 2
+    else 
+      layoutMode = 1
+    endif
+    ShowLayout layoutMode
+    Call @MyLayoutChange
+  endif
+  ResetTimer
+  StopTimer
+@End
+
+@OnTimer
+  needsReset = true
 @End
 
 @MyScaleLabel
@@ -246,6 +263,17 @@
 
 @OnHostStop
   Call @MyHostStopLabel
+@End
+
+@OnNewBar
+  if needsReset
+    currentPad = 0
+    ResetTimer
+    StopTimer
+    if ShiftPressed = false
+      needsReset = false
+    endif
+  endif
 @End
 
 // black circle ⚫
