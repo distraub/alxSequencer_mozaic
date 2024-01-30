@@ -228,7 +228,7 @@
     LabelKnob 10, {Rt Nt }, RootNoteName
 
     // label the knobs (TODO maybe make this dynamic)
-    if Unassigned pitch
+    if Unassigned currentPlayingNote
       LabelKnobs {ALX Sequencer}
       LabelPads {ALX Sequencer}
     else
@@ -236,7 +236,7 @@
       Call @MyPulseKnobs
     endif 
   else
-    if Unassigned pitch
+    if Unassigned currentPlayingNote
       LabelKnobs { }
       LabelPads {ALX Sequencer}
     else
@@ -247,11 +247,11 @@
 
 @MyHostStopLabel
   if layoutMode = 1
-    LabelKnobs {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
-    LabelPads {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
+    LabelKnobs {ALX Sequencer : }
+    LabelPads {ALX Sequencer : }
   else
     LabelKnobs { }
-    LabelPads {ALX Sequencer : }, { Note }, (NoteName pitch, YES)
+    LabelPads {ALX Sequencer : }
   endif
 @End
 
@@ -322,15 +322,28 @@
     SendMIDINoteOn 0, pitch, 100
     SendMIDINoteOff 0, pitch, 0, gate
     FlashUserLed
+    currentPlayingNote = pitch
   endif
 
-  if layoutMode = 1
-    LabelKnobs {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
-    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
+  // pick up the name of the note only when it actually plays
+  if Unassigned currentPlayingNote
+      if layoutMode = 1
+    LabelKnobs {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo
+    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo
+    else
+      LabelKnobs { }
+      LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }
+    endif
   else
-    LabelKnobs { }
-    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName pitch, YES)
+    if layoutMode = 1
+    LabelKnobs {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName currentPlayingNote, YES)
+    LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName currentPlayingNote, YES)
+    else
+      LabelKnobs { }
+      LabelPads {ALX Sequencer : }, {Host Bar }, HostBar, { Beat }, HostBeat, { BPM }, HostTempo, { Note }, (NoteName currentPlayingNote, YES)
+    endif
   endif
+  
 
   Inc currentPad // increment our current pad
   if (currentPad > 15) // loop if we are past the last pad
